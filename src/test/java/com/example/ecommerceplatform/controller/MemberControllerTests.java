@@ -1,7 +1,7 @@
 package com.example.ecommerceplatform.controller;
 
-import com.ll.exam.app__2022_10_11.app.member.controller.MemberController;
-import com.ll.exam.app__2022_10_11.app.member.service.MemberService;
+import com.example.ecommerceplatform.app.member.controller.MemberController;
+import com.example.ecommerceplatform.app.member.service.MemberService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
