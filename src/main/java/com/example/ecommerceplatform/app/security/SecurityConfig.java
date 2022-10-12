@@ -29,7 +29,7 @@ public class SecurityConfig {
                                 .failureHandler(authenticationFailureHandler)
                 )
                 .logout(
-                        logout -> logout.logoutUrl("/logout")
+                        logout -> logout.logoutUrl("/member/logout")
                 );
 
         return http.build();
