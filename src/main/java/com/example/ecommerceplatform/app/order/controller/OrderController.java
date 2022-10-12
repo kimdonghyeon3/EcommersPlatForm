@@ -3,6 +3,7 @@ package com.example.ecommerceplatform.app.order.controller;
 import com.example.ecommerceplatform.app.exception.ActorCanNotSeeOrderException;
 import com.example.ecommerceplatform.app.member.entity.Member;
 import com.example.ecommerceplatform.app.order.entity.Order;
+import com.example.ecommerceplatform.app.order.exception.OrderIdNotMatchedException;
 import com.example.ecommerceplatform.app.order.service.OrderService;
 import com.example.ecommerceplatform.app.security.dto.MemberContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -68,8 +69,20 @@ public class OrderController {
 
     @RequestMapping("/{id}/success")
     public String confirmPayment(
-            @RequestParam String paymentKey, @RequestParam String orderId, @RequestParam Long amount,
-            Model model) throws Exception {
+            @PathVariable long id,
+            @RequestParam String paymentKey,
+            @RequestParam String orderId,
+            @RequestParam Long amount,
+            Model model
+    ) throws Exception {
+
+        Order order = orderService.findForPrintById(id).get();
+
+        long orderIdInputed = Long.parseLong(orderId.split("__")[1]);
+
+        if ( id != orderIdInputed ) {
+            throw new OrderIdNotMatchedException();
+        }
 
         HttpHeaders headers = new HttpHeaders();
         // headers.setBasicAuth(SECRET_KEY, ""); // spring framework 5.2 이상 버전에서 지원
@@ -78,7 +91,7 @@ public class OrderController {
 
         Map<String, String> payloadMap = new HashMap<>();
         payloadMap.put("orderId", orderId);
-        payloadMap.put("amount", String.valueOf(amount));
+        payloadMap.put("amount", String.valueOf(order.calculatePayPrice()));
 
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(payloadMap), headers);
 
