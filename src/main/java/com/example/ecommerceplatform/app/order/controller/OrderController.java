@@ -2,7 +2,9 @@ package com.example.ecommerceplatform.app.order.controller;
 
 import com.example.ecommerceplatform.app.exception.ActorCanNotSeeOrderException;
 import com.example.ecommerceplatform.app.member.entity.Member;
+import com.example.ecommerceplatform.app.member.service.MemberService;
 import com.example.ecommerceplatform.app.order.entity.Order;
+import com.example.ecommerceplatform.app.order.exception.ActorCanNotPayOrderException;
 import com.example.ecommerceplatform.app.order.exception.OrderIdNotMatchedException;
 import com.example.ecommerceplatform.app.order.service.OrderService;
 import com.example.ecommerceplatform.app.security.dto.MemberContext;
@@ -16,13 +18,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
-
 import javax.annotation.PostConstruct;
 import java.util.Base64;
 import java.util.HashMap;
@@ -35,6 +33,25 @@ public class OrderController {
     private final OrderService orderService;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper;
+    private final MemberService memberService;
+
+    @PostMapping("/{id}/payByRestCashOnly")
+    @PreAuthorize("isAuthenticated()")
+    public String payByRestCashOnly(@AuthenticationPrincipal MemberContext memberContext, @PathVariable long id) {
+        Order order = orderService.findForPrintById(id).get();
+
+        Member actor = memberContext.getMember();
+
+        long restCash = memberService.getRestCash(actor);
+
+        if (orderService.actorCanPayment(actor, order) == false) {
+            throw new ActorCanNotPayOrderException();
+        }
+
+        orderService.payByRestCashOnly(order);
+
+        return "redirect:/order/%d?msg=%s".formatted(order.getId(), Ut.url.encode("예치금으로 결제했습니다."));
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -43,11 +60,14 @@ public class OrderController {
 
         Member actor = memberContext.getMember();
 
+        long restCash = memberService.getRestCash(actor);
+
         if (orderService.actorCanSee(actor, order) == false) {
             throw new ActorCanNotSeeOrderException();
         }
 
         model.addAttribute("order", order);
+        model.addAttribute("actorRestCash", restCash);
 
         return "order/detail";
     }
